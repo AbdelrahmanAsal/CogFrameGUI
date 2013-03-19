@@ -38,7 +38,7 @@ import javax.swing.table.TableColumnModel;
 
 public class MainUI extends JFrame {
 	MyTableModel t;
-	JTable table;
+	JTable table, putable;
 	JScrollPane ps;
 	int sorting;
 	boolean isSortAsc;
@@ -52,6 +52,7 @@ public class MainUI extends JFrame {
 	int sentPackets, receivedPackets;
 	JLabel packetsSentVal, packetsReceivedVal, primaryUserStateVal;
 	ProgramExecutor exec;
+	PrimaryUserTable puTableModel;
 	
 	public MainUI(String file) {
 		wifiCards = new HashMap<String,WirelessInterface>();
@@ -298,15 +299,25 @@ public class MainUI extends JFrame {
 		packetsSentVal.setFont(defaultFont);
 		getContentPane().add(packetsSentVal);
 		
-		JLabel primaryUserState = new JLabel("Primary User State:");
+		JLabel primaryUserState = new JLabel("Primary User State");
 		primaryUserState.setBounds((int)(ps.getX() + ps.getWidth() + 10), (int)(packetsSent.getY() + packetsSent.getHeight() + 10), defaultWidth, defaultHeight);
 		primaryUserState.setFont(defaultFont);
 		getContentPane().add(primaryUserState);
 		
-		primaryUserStateVal = new JLabel(emptyLabelVal);
-		primaryUserStateVal.setBounds((int)(primaryUserState.getX() + primaryUserState.getWidth() + 10), primaryUserState.getY(), defaultWidth, defaultHeight);
-		primaryUserStateVal.setFont(defaultFont);
-		getContentPane().add(primaryUserStateVal);
+		puTableModel = new PrimaryUserTable();
+		putable = new JTable();
+		putable.setModel(puTableModel);
+		putable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		for (int i = 0; i < 2; i++) {
+			TableColumn tcol = putable.getColumnModel().getColumn(i);
+			tcol.setPreferredWidth(150);
+			tcol.setCellRenderer(new PrimaryUserTableCellRenderer());
+		}
+
+		JScrollPane puScrollPane = new JScrollPane(putable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		puScrollPane.setBounds((int)(ps.getX() + ps.getWidth() + 10),(int)(primaryUserState.getY()+primaryUserState.getHeight()), 300, 200);
+		getContentPane().add(puScrollPane);
 		
 		exec = new ProgramExecutor(fileName);
 		exec.start();
@@ -365,8 +376,8 @@ public class MainUI extends JFrame {
 				rendererComp.setBackground(Color.BLACK);
 				return rendererComp;
 			}
-			String[] commands = {"discard", "channel_switching", "network_creation", "protocol", "packet_received", "primary_user_appeared", "packet_sent", "packet_dest", "network_ip"};
-			Color[] colors = {Color.LIGHT_GRAY, Color.CYAN, Color.BLUE, Color.ORANGE, Color.GREEN, Color.RED, Color.GREEN, Color.YELLOW, Color.PINK};
+			String[] commands = {"discard", "channel_switching", "network_creation", "protocol", "packet_received", "primary_user_active", "packet_sent", "packet_dest", "network_ip", "primary_user_inactive"};
+			Color[] colors = {Color.LIGHT_GRAY, Color.CYAN, Color.BLUE, Color.ORANGE, Color.GREEN, Color.RED, Color.GREEN, Color.YELLOW, Color.PINK, Color.MAGENTA};
 			boolean set = false;
 			for(int i = 0; i < commands.length; ++i) {
 				if (t.current.get(row).line.toLowerCase().contains(commands[i])){
@@ -500,7 +511,8 @@ public class MainUI extends JFrame {
 			}
 		}
 		public void parseCommand(String str){
-			if(str.toLowerCase().startsWith("channel_switching")) {
+			str = str.toLowerCase();
+			if(str.startsWith("channel_switching")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				int channel = new Integer(split[2]);
@@ -513,13 +525,13 @@ public class MainUI extends JFrame {
 					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
 					inter.channelVal.setText(channel+"");
 				}
-			} else if(str.toLowerCase().startsWith("packet_sent")){
+			} else if(str.startsWith("packet_sent")){
 				sentPackets++;
 				packetsSentVal.setText(sentPackets+"");
-			} else if(str.toLowerCase().startsWith("packet_received")){
+			} else if(str.startsWith("packet_received")){
 				receivedPackets++;
 				packetsReceivedVal.setText(receivedPackets+"");
-			} else if(str.toLowerCase().startsWith("network_creation")){
+			} else if(str.startsWith("network_creation")){
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				String networkID = split[2];
@@ -532,7 +544,7 @@ public class MainUI extends JFrame {
 					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
 					inter.networkVal.setText(networkID);
 				}
-			} else if(str.toLowerCase().startsWith("network_ip")){
+			} else if(str.startsWith("network_ip")){
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				String networkIP = split[2];
@@ -545,6 +557,18 @@ public class MainUI extends JFrame {
 					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
 					inter.networkIPVal.setText(networkIP);
 				}
+			} else if(str.startsWith("primary_user_active")) {
+				String[] split = str.split("[ ]+");
+				int channel = new Integer(split[1]);
+				puTableModel.setPU(channel, true);
+				putable.tableChanged(new TableModelEvent(puTableModel));
+				putable.repaint();
+			} else if(str.startsWith("primary_user_inactive")) {
+				String[] split = str.split("[ ]+");
+				int channel = new Integer(split[1]);
+				puTableModel.setPU(channel, false);
+				putable.tableChanged(new TableModelEvent(puTableModel));
+				putable.repaint();
 			}
 		}
 	}
