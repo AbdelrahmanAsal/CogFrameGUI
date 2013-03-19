@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class MainUI extends JFrame {
 	Font defaultFont = new Font("MS Mincho", Font.BOLD, 15);
 	int sentPackets, receivedPackets;
 	JLabel packetsSentVal, packetsReceivedVal, primaryUserStateVal;
+	ProgramExecutor exec;
 	
 	public MainUI(String file) {
 		wifiCards = new HashMap<String,WirelessInterface>();
@@ -206,6 +208,37 @@ public class MainUI extends JFrame {
 		clearButton.setBounds((int)(applyButton.getX() + applyButton.getWidth() + 10), 10, 80, 30);
 		getContentPane().add(clearButton);
 		
+		JButton stopButton = new JButton("Stop");
+		stopButton.addMouseListener(new MouseListener(){
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				exec.stopThread();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				// TODO Auto-generated method stub
+			}
+		});
+		stopButton.setBounds((int)(clearButton.getX() + clearButton.getWidth() + 10), 10, 80, 30);
+		getContentPane().add(stopButton);
+		
 		t = new MyTableModel();
 		table = new JTable();
 		table.setModel(t);
@@ -275,7 +308,7 @@ public class MainUI extends JFrame {
 		primaryUserStateVal.setFont(defaultFont);
 		getContentPane().add(primaryUserStateVal);
 		
-		ProgramExecutor exec = new ProgramExecutor(fileName);
+		exec = new ProgramExecutor(fileName);
 		exec.start();
 	}
 	
@@ -422,9 +455,15 @@ public class MainUI extends JFrame {
 	class ProgramExecutor extends Thread {
 		String fileName;
 		int id = 1;
+		boolean finished;
 		
 		public ProgramExecutor(String f) {
 			fileName = f;
+			finished = false;
+		}
+		
+		public void stopThread(){
+			finished = true;
 		}
 
 		public void run() {
@@ -439,7 +478,7 @@ public class MainUI extends JFrame {
 				writer.write("sudo /usr/local/click/bin/click " + fileName 	+ "\n");
 				writer.flush();
 				String line = reader.readLine();
-				while (line != null) {
+				while (!finished && line != null) {
 					System.out.println("Stdout : " + line);
 					Date date = new java.util.Date();
 					RowEntry r = new RowEntry(id++,
@@ -453,6 +492,9 @@ public class MainUI extends JFrame {
 					table.repaint();
 					line = reader.readLine();
 				}
+				writer.close();
+				reader.close();
+				process.destroy();
 			} catch (Exception e) {
 
 			}
