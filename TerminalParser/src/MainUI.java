@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -44,13 +45,15 @@ public class MainUI extends JFrame {
 	String fileName;
 	String query = "";
 	JTabbedPane tabbedPane;
-	ArrayList<String> wifiCards;
+	HashMap<String,WirelessInterface> wifiCards;
 	int defaultWidth = 220, defaultHeight = 40;
 	Font defaultFont = new Font("MS Mincho", Font.BOLD, 15);
+	int sentPackets, receivedPackets;
+	JLabel packetsSentVal, packetsReceivedVal, primaryUserStateVal;
 	
 	public MainUI(String file) {
 //		String file="";
-		wifiCards = new ArrayList<String>();
+		wifiCards = new HashMap<String,WirelessInterface>();
 		fileName = file;
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setDefaultLookAndFeelDecorated(true);
@@ -251,7 +254,7 @@ public class MainUI extends JFrame {
 		packetsReceived.setFont(defaultFont);
 		getContentPane().add(packetsReceived);
 		
-		JLabel packetsReceivedVal = new JLabel(emptyLabelVal);
+		packetsReceivedVal = new JLabel(emptyLabelVal);
 		packetsReceivedVal.setBounds((int)(packetsReceived.getX() + packetsReceived.getWidth() + 10), (int)(tabbedPane.getY() + tabbedPane.getHeight() + 10), defaultWidth, defaultHeight);
 		packetsReceivedVal.setFont(defaultFont);
 		getContentPane().add(packetsReceivedVal);
@@ -261,7 +264,7 @@ public class MainUI extends JFrame {
 		packetsSent.setFont(defaultFont);
 		getContentPane().add(packetsSent);
 		
-		JLabel packetsSentVal = new JLabel(emptyLabelVal);
+		packetsSentVal = new JLabel(emptyLabelVal);
 		packetsSentVal.setBounds((int)(packetsSent.getX() + packetsSent.getWidth() + 10), packetsSent.getY(), defaultWidth, defaultHeight);
 		packetsSentVal.setFont(defaultFont);
 		getContentPane().add(packetsSentVal);
@@ -271,7 +274,7 @@ public class MainUI extends JFrame {
 		primaryUserState.setFont(defaultFont);
 		getContentPane().add(primaryUserState);
 		
-		JLabel primaryUserStateVal = new JLabel(emptyLabelVal);
+		primaryUserStateVal = new JLabel(emptyLabelVal);
 		primaryUserStateVal.setBounds((int)(primaryUserState.getX() + primaryUserState.getWidth() + 10), primaryUserState.getY(), defaultWidth, defaultHeight);
 		primaryUserStateVal.setFont(defaultFont);
 		getContentPane().add(primaryUserStateVal);
@@ -279,8 +282,17 @@ public class MainUI extends JFrame {
 		ProgramExecutor exec = new ProgramExecutor(fileName);
 		exec.start();
 	}
+	class WirelessInterface{
+		JLabel channelVal;
+		JLabel networkVal;
+		
+		public WirelessInterface(){
+			channelVal = new JLabel("---");
+			networkVal = new JLabel("---");
+		}
+	}
 	
-	JPanel createPane(String s) {
+	JPanel createPane(String s, WirelessInterface inter) {
 		JPanel p = new JPanel();
 		p.setLayout(null);
 		int defaultWidth = 220, defaultHeight = 40;
@@ -292,20 +304,18 @@ public class MainUI extends JFrame {
 		channel.setFont(defaultFont);
 		p.add(channel);
 		
-		JLabel channelVal = new JLabel(emptyLabelVal);
-		channelVal.setBounds((int)(channel.getX() + channel.getWidth() + 10), channel.getY(), defaultWidth, defaultHeight);
-		channelVal.setFont(defaultFont);
-		p.add(channelVal);
+		inter.channelVal.setBounds((int)(channel.getX() + channel.getWidth() + 10), channel.getY(), defaultWidth, defaultHeight);
+		inter.channelVal.setFont(defaultFont);
+		p.add(inter.channelVal);
 		
 		JLabel network = new JLabel("Network:");
 		network.setBounds(10, (int)(channel.getY() + channel.getHeight() + 10), defaultWidth, defaultHeight);
 		network.setFont(defaultFont);
 		p.add(network);
 		
-		JLabel networkVal = new JLabel(emptyLabelVal);
-		networkVal.setBounds((int)(network.getX() + network.getWidth() + 10), network.getY(), defaultWidth, defaultHeight);
-		networkVal.setFont(defaultFont);
-		p.add(networkVal);
+		inter.networkVal.setBounds((int)(network.getX() + network.getWidth() + 10), network.getY(), defaultWidth, defaultHeight);
+		inter.networkVal.setFont(defaultFont);
+		p.add(inter.networkVal);
 		
 		return p;
 	}
@@ -404,9 +414,7 @@ public class MainUI extends JFrame {
 				isSortAsc = !isSortAsc;
 				for (int i = 0; i < columnsCount; i++) {
 					TableColumn column = colModel.getColumn(i);
-					column
-							.setHeaderValue(getColumnName(column
-									.getModelIndex()));
+					column.setHeaderValue(getColumnName(column.getModelIndex()));
 				}
 				table.getTableHeader().repaint();
 				Collections.sort(current);
@@ -433,8 +441,7 @@ public class MainUI extends JFrame {
 						new InputStreamReader(process.getInputStream()));
 				BufferedWriter writer = new BufferedWriter(
 						new OutputStreamWriter(process.getOutputStream()));
-				writer.write("sudo /usr/local/click/bin/click " + fileName
-						+ "\n");
+				writer.write("sudo /usr/local/click/bin/click " + fileName 	+ "\n");
 				writer.flush();
 				String line = reader.readLine();
 				while (line != null) {
@@ -456,18 +463,40 @@ public class MainUI extends JFrame {
 			}
 		}
 		public void parseCommand(String str){
-//			tabbedPane.add("Test",createPane("Test"));
 			if(str.toLowerCase().startsWith("channel_switching")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				int channel = new Integer(split[2]);
-				if(wifiCards.contains(interfaceName)){
-					
-				}else{
-					wifiCards.add(interfaceName);
-					tabbedPane.add(interfaceName,createPane(interfaceName));
+				if (wifiCards.containsKey(interfaceName)) {
+					WirelessInterface inter = wifiCards.get(interfaceName);
+					inter.channelVal.setText(channel+"");
+				} else {
+					WirelessInterface inter = new WirelessInterface();
+					wifiCards.put(interfaceName,inter);
+					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					inter.channelVal.setText(channel+"");
+				}
+			} else if(str.toLowerCase().startsWith("packet_sent")){
+				sentPackets++;
+				packetsSentVal.setText(sentPackets+"");
+			} else if(str.toLowerCase().startsWith("packet_received")){
+				receivedPackets++;
+				packetsReceivedVal.setText(receivedPackets+"");
+			} else if(str.toLowerCase().startsWith("network_creation")){
+				String[] split = str.split("[ ]+");
+				String interfaceName = split[1];
+				String networkID = split[2];
+				if (wifiCards.containsKey(interfaceName)) {
+					WirelessInterface inter = wifiCards.get(interfaceName);
+					inter.networkVal.setText(networkID);
+				} else {
+					WirelessInterface inter = new WirelessInterface();
+					wifiCards.put(interfaceName,inter);
+					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					inter.networkVal.setText(networkID);
 				}
 			}
+			
 					
 		}
 	}
