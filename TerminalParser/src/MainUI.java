@@ -37,11 +37,9 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 public class MainUI extends JFrame {
-	MyTableModel t;
+	TerminalOutputTable t;
 	JTable table, putable;
 	JScrollPane ps;
-	int sorting;
-	boolean isSortAsc;
 	final int[] colWidth = {60, 200, 520};
 	String fileName;
 	String query = "";
@@ -86,7 +84,7 @@ public class MainUI extends JFrame {
 			public void keyPressed(KeyEvent k) {
 					query = searchField.getText();
 					t.current.clear();
-					for(RowEntry r: t.all)
+					for(TerminalTableRowEntry r: t.all)
 						if(r.line.toLowerCase().contains(query.toLowerCase()))
 							t.current.add(r);
 					repaint();
@@ -115,7 +113,7 @@ public class MainUI extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				query = searchField.getText();
 				t.current.clear();
-				for(RowEntry r: t.all)
+				for(TerminalTableRowEntry r: t.all)
 					if(r.line.toLowerCase().contains(query.toLowerCase()))
 						t.current.add(r);
 				repaint();
@@ -146,7 +144,7 @@ public class MainUI extends JFrame {
 				if(k.getKeyCode() == KeyEvent.VK_ENTER) {
 					query = searchField.getText();
 					t.current.clear();
-					for(RowEntry r: t.all)
+					for(TerminalTableRowEntry r: t.all)
 						if(r.line.toLowerCase().contains(query.toLowerCase()))
 							t.current.add(r);
 					repaint();
@@ -240,14 +238,14 @@ public class MainUI extends JFrame {
 		stopButton.setBounds((int)(clearButton.getX() + clearButton.getWidth() + 10), 10, 80, 30);
 		getContentPane().add(stopButton);
 		
-		t = new MyTableModel();
+		t = new TerminalOutputTable();
 		table = new JTable();
 		table.setModel(t);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		for (int i = 0; i < colWidth.length; i++) {
 			TableColumn tcol = table.getColumnModel().getColumn(i);
 			tcol.setPreferredWidth(colWidth[i]);
-			tcol.setCellRenderer(new CustomCellRenderer());
+			tcol.setCellRenderer(new TerminalTableCellRenderer());
 		}
 
 		JTableHeader header = table.getTableHeader();
@@ -365,103 +363,8 @@ public class MainUI extends JFrame {
 		ui.setVisible(true);
 	}
 
-	class CustomCellRenderer extends DefaultTableCellRenderer {
 
-		public Component getTableCellRendererComponent(JTable table,
-				Object value, boolean isSelected, boolean hasFocus, int row,
-				int column) {
-			Component rendererComp = super.getTableCellRendererComponent(table,
-					value, isSelected, hasFocus, row, column);
-			if(isSelected){
-				rendererComp.setBackground(Color.BLACK);
-				return rendererComp;
-			}
-			String[] commands = {"discard", "channel_switching", "network_creation", "protocol", "packet_received", "primary_user_active", "packet_sent", "packet_dest", "network_ip", "primary_user_inactive"};
-			Color[] colors = {Color.LIGHT_GRAY, Color.CYAN, Color.BLUE, Color.ORANGE, Color.GREEN, Color.RED, Color.GREEN, Color.YELLOW, Color.PINK, Color.MAGENTA};
-			boolean set = false;
-			for(int i = 0; i < commands.length; ++i) {
-				if (t.current.get(row).line.toLowerCase().contains(commands[i])){
-					rendererComp.setBackground(colors[i]);
-					set = true;
-					break;
-				}
-			}
-			if(!set)
-				rendererComp.setBackground(Color.WHITE);
-			return rendererComp;
-		}
-	}
-
-	class MyTableModel extends AbstractTableModel {
-		String[] colNames = { "ID", "Timestamp", "Log" };
-		ArrayList<RowEntry> current, all;
-		protected int columnsCount = colNames.length;
-
-		public MyTableModel() {
-			current = new ArrayList<RowEntry>();
-			all = new ArrayList<RowEntry>();
-		}
-
-		public int getRowCount() {
-			return current == null ? 0 : current.size();
-		}
-
-		public int getColumnCount() {
-			return columnsCount;
-		}
-
-		public String getColumnName(int column) {
-			return colNames[column];
-		}
-
-		public boolean isCellEditable(int nRow, int nCol) {
-			return false;
-		}
-
-		public Object getValueAt(int nRow, int nCol) {
-			if (nRow < 0 || nRow >= current.size())
-				return "";
-			if (nCol == 0)
-				return current.get(nRow).identifer;
-			if (nCol == 1)
-				return current.get(nRow).time.toString();
-			else if (nCol == 2)
-				return current.get(nRow).line;
-			return "";
-		}
-
-		public String getTitle() {
-			return "Data";
-		}
-
-		class ColumnListener extends MouseAdapter {
-			protected JTable table;
-
-			public ColumnListener(JTable t) {
-				table = t;
-			}
-
-			public void mouseClicked(MouseEvent e) {
-				TableColumnModel colModel = table.getColumnModel();
-				int columnModelIndex = colModel.getColumnIndexAtX(e.getX());
-				int modelIndex = colModel.getColumn(columnModelIndex)
-						.getModelIndex();
-
-				if (modelIndex < 0)
-					return;
-				sorting = modelIndex;
-				isSortAsc = !isSortAsc;
-				for (int i = 0; i < columnsCount; i++) {
-					TableColumn column = colModel.getColumn(i);
-					column.setHeaderValue(getColumnName(column.getModelIndex()));
-				}
-				table.getTableHeader().repaint();
-				Collections.sort(current);
-				table.tableChanged(new TableModelEvent(MyTableModel.this));
-				table.repaint();
-			}
-		}
-	}
+	
 
 	class ProgramExecutor extends Thread {
 		String fileName;
@@ -492,7 +395,7 @@ public class MainUI extends JFrame {
 				while (!finished && line != null) {
 					System.out.println("Stdout : " + line);
 					Date date = new java.util.Date();
-					RowEntry r = new RowEntry(id++,
+					TerminalTableRowEntry r = new TerminalTableRowEntry(id++,
 							new Timestamp(date.getTime()), line);
 					t.all.add(r);
 					if(line.toLowerCase().contains(query.toLowerCase()))
@@ -570,29 +473,6 @@ public class MainUI extends JFrame {
 				putable.tableChanged(new TableModelEvent(puTableModel));
 				putable.repaint();
 			}
-		}
-	}
-
-	class RowEntry implements Comparable<RowEntry> {
-		public Timestamp time;
-		public String line;
-		public int identifer;
-
-		public RowEntry(int id, Timestamp t, String l) {
-			identifer = id;
-			time = t;
-			line = l;
-		}
-
-		public int compareTo(RowEntry r2) {
-			if (sorting == 0)
-				return (isSortAsc ? 1 : -1) * (identifer - r2.identifer);
-			if (sorting == 1) {
-				if (time.compareTo(r2.time) == 0)
-					return (isSortAsc ? 1 : -1) * (identifer - r2.identifer);
-				return (isSortAsc ? 1 : -1) * time.compareTo(r2.time);
-			}
-			return (isSortAsc ? 1 : -1) * line.compareTo(r2.line);
 		}
 	}
 }
