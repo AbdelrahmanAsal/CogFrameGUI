@@ -52,7 +52,6 @@ public class MainUI extends JFrame {
 	JLabel packetsSentVal, packetsReceivedVal, primaryUserStateVal;
 	
 	public MainUI(String file) {
-//		String file="";
 		wifiCards = new HashMap<String,WirelessInterface>();
 		fileName = file;
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -82,15 +81,12 @@ public class MainUI extends JFrame {
 
 			@Override
 			public void keyPressed(KeyEvent k) {
-//				if(k.getKeyCode() == KeyEvent.VK_ENTER)
-				{
 					query = searchField.getText();
-					t.current = new ArrayList<RowEntry>();
+					t.current.clear();
 					for(RowEntry r: t.all)
 						if(r.line.toLowerCase().contains(query.toLowerCase()))
 							t.current.add(r);
 					repaint();
-				}
 			}
 
 			@Override
@@ -115,7 +111,7 @@ public class MainUI extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				query = searchField.getText();
-				t.current = new ArrayList<RowEntry>();
+				t.current.clear();
 				for(RowEntry r: t.all)
 					if(r.line.toLowerCase().contains(query.toLowerCase()))
 						t.current.add(r);
@@ -146,7 +142,7 @@ public class MainUI extends JFrame {
 			public void keyPressed(KeyEvent k) {
 				if(k.getKeyCode() == KeyEvent.VK_ENTER) {
 					query = searchField.getText();
-					t.current = new ArrayList<RowEntry>();
+					t.current.clear();
 					for(RowEntry r: t.all)
 						if(r.line.toLowerCase().contains(query.toLowerCase()))
 							t.current.add(r);
@@ -177,7 +173,7 @@ public class MainUI extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				query = "";
 				searchField.setText("");
-				t.current = new ArrayList<RowEntry>();
+				t.current.clear();
 				t.current.addAll(t.all);
 				repaint();
 			}
@@ -282,15 +278,6 @@ public class MainUI extends JFrame {
 		ProgramExecutor exec = new ProgramExecutor(fileName);
 		exec.start();
 	}
-	class WirelessInterface{
-		JLabel channelVal;
-		JLabel networkVal;
-		
-		public WirelessInterface(){
-			channelVal = new JLabel("---");
-			networkVal = new JLabel("---");
-		}
-	}
 	
 	JPanel createPane(String s, WirelessInterface inter) {
 		JPanel p = new JPanel();
@@ -298,7 +285,6 @@ public class MainUI extends JFrame {
 		int defaultWidth = 220, defaultHeight = 40;
 		Font defaultFont = new Font("MS Mincho", Font.BOLD, 15);
 
-		String emptyLabelVal = "---";
 		JLabel channel = new JLabel("Channel:");
 		channel.setBounds(10, 10, defaultWidth, defaultHeight);
 		channel.setFont(defaultFont);
@@ -317,12 +303,21 @@ public class MainUI extends JFrame {
 		inter.networkVal.setFont(defaultFont);
 		p.add(inter.networkVal);
 		
+		JLabel networkIP = new JLabel("IP:");
+		networkIP.setBounds(10, (int)(network.getY() + network.getHeight() + 10), defaultWidth, defaultHeight);
+		networkIP.setFont(defaultFont);
+		p.add(networkIP);
+		
+		inter.networkIPVal.setBounds((int)(networkIP.getX() + networkIP.getWidth() + 10), networkIP.getY(), defaultWidth, defaultHeight);
+		inter.networkIPVal.setFont(defaultFont);
+		p.add(inter.networkIPVal);
+		
 		return p;
 	}
 	 
 	public static void main(String[] args) {
 		MainUI ui = new MainUI(args[0]);
-//		MainUI ui = new MainUI();
+//		MainUI ui = new MainUI("");
 		ui.setVisible(true);
 	}
 
@@ -337,8 +332,8 @@ public class MainUI extends JFrame {
 				rendererComp.setBackground(Color.BLACK);
 				return rendererComp;
 			}
-			String[] commands = {"discard", "channel_switching", "network_creation", "protocol", "packet_received", "primary_user_appeared", "packet_sent", "packet_dest"};
-			Color[] colors = {Color.LIGHT_GRAY, Color.CYAN, Color.BLUE, Color.ORANGE, Color.GREEN, Color.RED, Color.GREEN, Color.YELLOW};
+			String[] commands = {"discard", "channel_switching", "network_creation", "protocol", "packet_received", "primary_user_appeared", "packet_sent", "packet_dest", "network_ip"};
+			Color[] colors = {Color.LIGHT_GRAY, Color.CYAN, Color.BLUE, Color.ORANGE, Color.GREEN, Color.RED, Color.GREEN, Color.YELLOW, Color.PINK};
 			boolean set = false;
 			for(int i = 0; i < commands.length; ++i) {
 				if (t.current.get(row).line.toLowerCase().contains(commands[i])){
@@ -495,9 +490,20 @@ public class MainUI extends JFrame {
 					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
 					inter.networkVal.setText(networkID);
 				}
+			} else if(str.toLowerCase().startsWith("network_ip")){
+				String[] split = str.split("[ ]+");
+				String interfaceName = split[1];
+				String networkIP = split[2];
+				if (wifiCards.containsKey(interfaceName)) {
+					WirelessInterface inter = wifiCards.get(interfaceName);
+					inter.networkIPVal.setText(networkIP);
+				} else {
+					WirelessInterface inter = new WirelessInterface();
+					wifiCards.put(interfaceName,inter);
+					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					inter.networkIPVal.setText(networkIP);
+				}
 			}
-			
-					
 		}
 	}
 
