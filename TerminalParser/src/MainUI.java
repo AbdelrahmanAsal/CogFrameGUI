@@ -321,50 +321,11 @@ public class MainUI extends JFrame {
 		exec.start();
 	}
 	
-	JPanel createPane(String s, WirelessInterface inter) {
-		JPanel p = new JPanel();
-		p.setLayout(null);
-		int defaultWidth = 220, defaultHeight = 40;
-		Font defaultFont = new Font("MS Mincho", Font.BOLD, 15);
-
-		JLabel channel = new JLabel("Channel:");
-		channel.setBounds(10, 10, defaultWidth, defaultHeight);
-		channel.setFont(defaultFont);
-		p.add(channel);
-		
-		inter.channelVal.setBounds((int)(channel.getX() + channel.getWidth() + 10), channel.getY(), defaultWidth, defaultHeight);
-		inter.channelVal.setFont(defaultFont);
-		p.add(inter.channelVal);
-		
-		JLabel network = new JLabel("Network:");
-		network.setBounds(10, (int)(channel.getY() + channel.getHeight() + 10), defaultWidth, defaultHeight);
-		network.setFont(defaultFont);
-		p.add(network);
-		
-		inter.networkVal.setBounds((int)(network.getX() + network.getWidth() + 10), network.getY(), defaultWidth, defaultHeight);
-		inter.networkVal.setFont(defaultFont);
-		p.add(inter.networkVal);
-		
-		JLabel networkIP = new JLabel("IP:");
-		networkIP.setBounds(10, (int)(network.getY() + network.getHeight() + 10), defaultWidth, defaultHeight);
-		networkIP.setFont(defaultFont);
-		p.add(networkIP);
-		
-		inter.networkIPVal.setBounds((int)(networkIP.getX() + networkIP.getWidth() + 10), networkIP.getY(), defaultWidth, defaultHeight);
-		inter.networkIPVal.setFont(defaultFont);
-		p.add(inter.networkIPVal);
-		
-		return p;
-	}
-	 
 	public static void main(String[] args) {
 		MainUI ui = new MainUI(args[0]);
 //		MainUI ui = new MainUI("");
 		ui.setVisible(true);
 	}
-
-
-	
 
 	class ProgramExecutor extends Thread {
 		String fileName;
@@ -425,9 +386,12 @@ public class MainUI extends JFrame {
 				} else {
 					WirelessInterface inter = new WirelessInterface();
 					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
 					inter.channelVal.setText(channel+"");
 				}
+				WirelessInterface inter = wifiCards.get(interfaceName);
+				inter.switches++;
+				inter.noOfSwitches.setText(inter.switches+"");
 			} else if(str.startsWith("packet_sent")){
 				sentPackets++;
 				packetsSentVal.setText(sentPackets+"");
@@ -444,7 +408,7 @@ public class MainUI extends JFrame {
 				} else {
 					WirelessInterface inter = new WirelessInterface();
 					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
 					inter.networkVal.setText(networkID);
 				}
 			} else if(str.startsWith("network_ip")){
@@ -457,7 +421,7 @@ public class MainUI extends JFrame {
 				} else {
 					WirelessInterface inter = new WirelessInterface();
 					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, createPane(interfaceName,inter));
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
 					inter.networkIPVal.setText(networkIP);
 				}
 			} else if(str.startsWith("primary_user_active")) {
@@ -472,6 +436,19 @@ public class MainUI extends JFrame {
 				puTableModel.setPU(channel, false);
 				putable.tableChanged(new TableModelEvent(puTableModel));
 				putable.repaint();
+			} else if(str.startsWith("average_switching_time")){
+				String[] split = str.split("[ ]+");
+				String interfaceName = split[1];
+				String switchingTime = split[2];
+				if (wifiCards.containsKey(interfaceName)) {
+					WirelessInterface inter = wifiCards.get(interfaceName);
+					inter.averageSwitchingTime.setText(switchingTime);
+				} else {
+					WirelessInterface inter = new WirelessInterface();
+					wifiCards.put(interfaceName,inter);
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
+					inter.averageSwitchingTime.setText(switchingTime);
+				}
 			}
 		}
 	}
