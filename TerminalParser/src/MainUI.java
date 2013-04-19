@@ -10,13 +10,19 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 
 import javax.swing.JButton;
@@ -40,21 +46,20 @@ public class MainUI extends JFrame {
 	TerminalOutputTable t;
 	JTable table, putable;
 	JScrollPane ps;
-	final int[] colWidth = {60, 200, 520};
-	String fileName;
+	final int[] colWidth = { 60, 200, 520 };
 	String query = "";
 	JTabbedPane tabbedPane;
-	HashMap<String,WirelessInterface> wifiCards;
+	HashMap<String, WirelessInterface> wifiCards;
 	int defaultWidth = 220, defaultHeight = 40;
 	Font defaultFont = new Font("MS Mincho", Font.BOLD, 15);
 	int sentPackets, receivedPackets;
 	JLabel packetsSentVal, packetsReceivedVal, primaryUserStateVal;
 	ProgramExecutor exec;
 	PrimaryUserTable puTableModel;
-	
-	public MainUI(String file) {
-		wifiCards = new HashMap<String,WirelessInterface>();
-		fileName = file;
+	Server server;
+
+	public MainUI(String modulePath) {
+		wifiCards = new HashMap<String, WirelessInterface>();
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setDefaultLookAndFeelDecorated(true);
 		try {
@@ -65,9 +70,9 @@ public class MainUI extends JFrame {
 					break;
 				}
 			}
-//			UIManager.setLookAndFeel("seaglasslookandfeel.SeaGlassLookAndFeel");
+			// UIManager.setLookAndFeel("seaglasslookandfeel.SeaGlassLookAndFeel");
 		} catch (Exception e) {
-			
+
 		}
 		getContentPane().setLayout(null);
 
@@ -77,44 +82,44 @@ public class MainUI extends JFrame {
 		getContentPane().add(filterLabel);
 
 		final JTextField searchField = new JTextField();
-		searchField.setBounds((int)(filterLabel.getX() + filterLabel.getWidth() + 10), 10, 250, 30);
-		searchField.addKeyListener(new KeyListener(){
+		searchField.setBounds((int) (filterLabel.getX()
+				+ filterLabel.getWidth() + 10), 10, 250, 30);
+		searchField.addKeyListener(new KeyListener() {
 
 			@Override
 			public void keyPressed(KeyEvent k) {
-					query = searchField.getText();
-					t.current.clear();
-					for(TerminalTableRowEntry r: t.all)
-						if(r.line.toLowerCase().contains(query.toLowerCase()))
-							t.current.add(r);
-					repaint();
+				query = searchField.getText();
+				t.current.clear();
+				for (TerminalTableRowEntry r : t.all)
+					if (r.line.toLowerCase().contains(query.toLowerCase()))
+						t.current.add(r);
+				repaint();
 			}
 
 			@Override
 			public void keyReleased(KeyEvent arg0) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void keyTyped(KeyEvent arg0) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 		});
 		getContentPane().add(searchField);
-		
-		
+
 		JButton applyButton = new JButton("Apply");
-		applyButton.addMouseListener(new MouseListener(){
+		applyButton.addMouseListener(new MouseListener() {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				query = searchField.getText();
 				t.current.clear();
-				for(TerminalTableRowEntry r: t.all)
-					if(r.line.toLowerCase().contains(query.toLowerCase()))
+				for (TerminalTableRowEntry r : t.all)
+					if (r.line.toLowerCase().contains(query.toLowerCase()))
 						t.current.add(r);
 				repaint();
 			}
@@ -134,18 +139,18 @@ public class MainUI extends JFrame {
 			@Override
 			public void mouseReleased(MouseEvent e) {
 			}
-			
+
 		});
-		
-		applyButton.addKeyListener(new KeyListener(){
+
+		applyButton.addKeyListener(new KeyListener() {
 
 			@Override
 			public void keyPressed(KeyEvent k) {
-				if(k.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (k.getKeyCode() == KeyEvent.VK_ENTER) {
 					query = searchField.getText();
 					t.current.clear();
-					for(TerminalTableRowEntry r: t.all)
-						if(r.line.toLowerCase().contains(query.toLowerCase()))
+					for (TerminalTableRowEntry r : t.all)
+						if (r.line.toLowerCase().contains(query.toLowerCase()))
 							t.current.add(r);
 					repaint();
 				}
@@ -154,21 +159,22 @@ public class MainUI extends JFrame {
 			@Override
 			public void keyReleased(KeyEvent arg0) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void keyTyped(KeyEvent arg0) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 		});
-		applyButton.setBounds((int)(searchField.getX() + searchField.getWidth() + 10), 10, 80, 30);
+		applyButton.setBounds((int) (searchField.getX()
+				+ searchField.getWidth() + 10), 10, 80, 30);
 		getContentPane().add(applyButton);
-		
+
 		JButton clearButton = new JButton("Clear");
-		clearButton.addMouseListener(new MouseListener(){
+		clearButton.addMouseListener(new MouseListener() {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -182,33 +188,34 @@ public class MainUI extends JFrame {
 			@Override
 			public void mouseEntered(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void mouseExited(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void mousePressed(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 		});
-		clearButton.setBounds((int)(applyButton.getX() + applyButton.getWidth() + 10), 10, 80, 30);
+		clearButton.setBounds((int) (applyButton.getX()
+				+ applyButton.getWidth() + 10), 10, 80, 30);
 		getContentPane().add(clearButton);
-		
+
 		JButton stopButton = new JButton("Stop");
-		stopButton.addMouseListener(new MouseListener(){
+		stopButton.addMouseListener(new MouseListener() {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -235,9 +242,45 @@ public class MainUI extends JFrame {
 				// TODO Auto-generated method stub
 			}
 		});
-		stopButton.setBounds((int)(clearButton.getX() + clearButton.getWidth() + 10), 10, 80, 30);
+		stopButton.setBounds(
+				(int) (clearButton.getX() + clearButton.getWidth() + 10), 10,
+				80, 30);
 		getContentPane().add(stopButton);
-		
+
+		final JTextField nodeNameField = new JTextField();
+		nodeNameField.setBounds((int) (stopButton.getX()
+				+ stopButton.getWidth() + 10), 10, 200, 30);
+		getContentPane().add(nodeNameField);
+
+		JButton setNodeNameButton = new JButton("Set node name");
+		setNodeNameButton.addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				String nodeNameStr = nodeNameField.getText();
+				server.nodeName = nodeNameStr;
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+			}
+		});
+		setNodeNameButton.setBounds((int) (nodeNameField.getX()
+				+ nodeNameField.getWidth() + 10), 10, 150, 30);
+		getContentPane().add(setNodeNameButton);
+
 		t = new TerminalOutputTable();
 		table = new JTable();
 		table.setModel(t);
@@ -255,53 +298,68 @@ public class MainUI extends JFrame {
 		ps = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 		ps.setBounds(10, 50, 800, 800);
-		
-//		JScrollBar sb = ps.getVerticalScrollBar();
-//		boolean onBottom = (sb.getValue() == sb.getMaximum());
-//		if(onBottom)
-//			sb.setValue(sb.getMaximum());
 
-		ps.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {  
-	        public void adjustmentValueChanged(AdjustmentEvent e) {
-	        	boolean onBottom = (e.getAdjustable().getValue() == e.getAdjustable().getMaximum());
-	    		if(onBottom)
-	    			e.getAdjustable().setValue(e.getAdjustable().getMaximum());  
-	        }
-	    });
-		
+		// JScrollBar sb = ps.getVerticalScrollBar();
+		// boolean onBottom = (sb.getValue() == sb.getMaximum());
+		// if(onBottom)
+		// sb.setValue(sb.getMaximum());
+
+		ps.getVerticalScrollBar().addAdjustmentListener(
+				new AdjustmentListener() {
+					public void adjustmentValueChanged(AdjustmentEvent e) {
+						boolean onBottom = (e.getAdjustable().getValue() == e
+								.getAdjustable().getMaximum());
+						if (onBottom)
+							e.getAdjustable().setValue(
+									e.getAdjustable().getMaximum());
+					}
+				});
+
 		getContentPane().add(ps);
-		
-		tabbedPane = new JTabbedPane();
-		tabbedPane.setBounds((int)(ps.getX() + ps.getWidth() + 10), 10, 680, 400);
-		add(tabbedPane);
 
+		tabbedPane = new JTabbedPane();
+		tabbedPane.setBounds((int) (ps.getX() + ps.getWidth() + 10), 10, 680,
+				400);
+		add(tabbedPane);
 
 		String emptyLabelVal = "--";
 		JLabel packetsReceived = new JLabel("No. of received packets:");
-		packetsReceived.setBounds((int)(ps.getX() + ps.getWidth() + 10), (int)(tabbedPane.getY() + tabbedPane.getHeight() + 10), defaultWidth, defaultHeight);
+		packetsReceived.setBounds((int) (ps.getX() + ps.getWidth() + 10),
+				(int) (tabbedPane.getY() + tabbedPane.getHeight() + 10),
+				defaultWidth, defaultHeight);
 		packetsReceived.setFont(defaultFont);
 		getContentPane().add(packetsReceived);
-		
+
 		packetsReceivedVal = new JLabel(emptyLabelVal);
-		packetsReceivedVal.setBounds((int)(packetsReceived.getX() + packetsReceived.getWidth() + 10), (int)(tabbedPane.getY() + tabbedPane.getHeight() + 10), defaultWidth, defaultHeight);
+		packetsReceivedVal.setBounds((int) (packetsReceived.getX()
+				+ packetsReceived.getWidth() + 10), (int) (tabbedPane.getY()
+				+ tabbedPane.getHeight() + 10), defaultWidth, defaultHeight);
 		packetsReceivedVal.setFont(defaultFont);
 		getContentPane().add(packetsReceivedVal);
-		
+
 		JLabel packetsSent = new JLabel("No. of Sent packets:");
-		packetsSent.setBounds((int)(ps.getX() + ps.getWidth() + 10), (int)(packetsReceived.getY() + packetsReceived.getHeight() + 10), defaultWidth, defaultHeight);
+		packetsSent
+				.setBounds((int) (ps.getX() + ps.getWidth() + 10),
+						(int) (packetsReceived.getY()
+								+ packetsReceived.getHeight() + 10),
+						defaultWidth, defaultHeight);
 		packetsSent.setFont(defaultFont);
 		getContentPane().add(packetsSent);
-		
+
 		packetsSentVal = new JLabel(emptyLabelVal);
-		packetsSentVal.setBounds((int)(packetsSent.getX() + packetsSent.getWidth() + 10), packetsSent.getY(), defaultWidth, defaultHeight);
+		packetsSentVal.setBounds((int) (packetsSent.getX()
+				+ packetsSent.getWidth() + 10), packetsSent.getY(),
+				defaultWidth, defaultHeight);
 		packetsSentVal.setFont(defaultFont);
 		getContentPane().add(packetsSentVal);
-		
+
 		JLabel primaryUserState = new JLabel("Primary User State");
-		primaryUserState.setBounds((int)(ps.getX() + ps.getWidth() + 10), (int)(packetsSent.getY() + packetsSent.getHeight() + 10), defaultWidth, defaultHeight);
+		primaryUserState.setBounds((int) (ps.getX() + ps.getWidth() + 10),
+				(int) (packetsSent.getY() + packetsSent.getHeight() + 10),
+				defaultWidth, defaultHeight);
 		primaryUserState.setFont(defaultFont);
 		getContentPane().add(primaryUserState);
-		
+
 		puTableModel = new PrimaryUserTable();
 		putable = new JTable();
 		putable.setModel(puTableModel);
@@ -312,32 +370,38 @@ public class MainUI extends JFrame {
 			tcol.setCellRenderer(new PrimaryUserTableCellRenderer());
 		}
 
-		JScrollPane puScrollPane = new JScrollPane(putable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+		JScrollPane puScrollPane = new JScrollPane(putable,
+				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-		puScrollPane.setBounds((int)(ps.getX() + ps.getWidth() + 10),(int)(primaryUserState.getY()+primaryUserState.getHeight()), 300, 200);
+		puScrollPane.setBounds((int) (ps.getX() + ps.getWidth() + 10),
+				(int) (primaryUserState.getY() + primaryUserState.getHeight()),
+				300, 200);
 		getContentPane().add(puScrollPane);
-		
-		exec = new ProgramExecutor(fileName);
-		exec.start();
+
+		exec = new ProgramExecutor("Configuration.txt");
+		server = new Server();
+		server.modulePath = modulePath;
+		//server.exec = exec;
+		server.start();
+
 	}
-	
+
 	public static void main(String[] args) {
 		MainUI ui = new MainUI(args[0]);
-//		MainUI ui = new MainUI("");
 		ui.setVisible(true);
 	}
 
-	class ProgramExecutor extends Thread {
+	public class ProgramExecutor extends Thread {
 		String fileName;
 		int id = 1;
 		boolean finished;
-		
+
 		public ProgramExecutor(String f) {
 			fileName = f;
 			finished = false;
 		}
-		
-		public void stopThread(){
+
+		public void stopThread() {
 			finished = true;
 		}
 
@@ -350,7 +414,9 @@ public class MainUI extends JFrame {
 						new InputStreamReader(process.getInputStream()));
 				BufferedWriter writer = new BufferedWriter(
 						new OutputStreamWriter(process.getOutputStream()));
-				writer.write("sudo /usr/local/click/bin/click " + fileName 	+ "\n");
+
+				writer.write("sudo /usr/local/click/bin/click " + fileName
+						+ "\n");
 				writer.flush();
 				String line = reader.readLine();
 				while (!finished && line != null) {
@@ -359,7 +425,7 @@ public class MainUI extends JFrame {
 					TerminalTableRowEntry r = new TerminalTableRowEntry(id++,
 							new Timestamp(date.getTime()), line);
 					t.all.add(r);
-					if(line.toLowerCase().contains(query.toLowerCase()))
+					if (line.toLowerCase().contains(query.toLowerCase()))
 						t.current.add(r);
 					parseCommand(line);
 					table.getTableHeader().repaint();
@@ -374,31 +440,33 @@ public class MainUI extends JFrame {
 
 			}
 		}
-		public void parseCommand(String str){
+
+		public void parseCommand(String str) {
 			str = str.toLowerCase();
-			if(str.startsWith("channel_switching")) {
+			if (str.startsWith("channel_switching")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				int channel = new Integer(split[2]);
 				if (wifiCards.containsKey(interfaceName)) {
 					WirelessInterface inter = wifiCards.get(interfaceName);
-					inter.channelVal.setText(channel+"");
+					inter.channelVal.setText(channel + "");
 				} else {
 					WirelessInterface inter = new WirelessInterface();
-					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
-					inter.channelVal.setText(channel+"");
+					wifiCards.put(interfaceName, inter);
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(
+							inter));
+					inter.channelVal.setText(channel + "");
 				}
 				WirelessInterface inter = wifiCards.get(interfaceName);
 				inter.switches++;
-				inter.noOfSwitches.setText(inter.switches+"");
-			} else if(str.startsWith("packet_sent")){
+				inter.noOfSwitches.setText(inter.switches + "");
+			} else if (str.startsWith("packet_sent")) {
 				sentPackets++;
-				packetsSentVal.setText(sentPackets+"");
-			} else if(str.startsWith("packet_received")){
+				packetsSentVal.setText(sentPackets + "");
+			} else if (str.startsWith("packet_received")) {
 				receivedPackets++;
-				packetsReceivedVal.setText(receivedPackets+"");
-			} else if(str.startsWith("network_creation")){
+				packetsReceivedVal.setText(receivedPackets + "");
+			} else if (str.startsWith("network_creation")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				String networkID = split[2];
@@ -407,11 +475,12 @@ public class MainUI extends JFrame {
 					inter.networkVal.setText(networkID);
 				} else {
 					WirelessInterface inter = new WirelessInterface();
-					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
+					wifiCards.put(interfaceName, inter);
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(
+							inter));
 					inter.networkVal.setText(networkID);
 				}
-			} else if(str.startsWith("network_ip")){
+			} else if (str.startsWith("network_ip")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				String networkIP = split[2];
@@ -420,23 +489,24 @@ public class MainUI extends JFrame {
 					inter.networkIPVal.setText(networkIP);
 				} else {
 					WirelessInterface inter = new WirelessInterface();
-					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
+					wifiCards.put(interfaceName, inter);
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(
+							inter));
 					inter.networkIPVal.setText(networkIP);
 				}
-			} else if(str.startsWith("primary_user_active")) {
+			} else if (str.startsWith("primary_user_active")) {
 				String[] split = str.split("[ ]+");
 				int channel = new Integer(split[1]);
 				puTableModel.setPU(channel, true);
 				putable.tableChanged(new TableModelEvent(puTableModel));
 				putable.repaint();
-			} else if(str.startsWith("primary_user_inactive")) {
+			} else if (str.startsWith("primary_user_inactive")) {
 				String[] split = str.split("[ ]+");
 				int channel = new Integer(split[1]);
 				puTableModel.setPU(channel, false);
 				putable.tableChanged(new TableModelEvent(puTableModel));
 				putable.repaint();
-			} else if(str.startsWith("average_switching_time")){
+			} else if (str.startsWith("average_switching_time")) {
 				String[] split = str.split("[ ]+");
 				String interfaceName = split[1];
 				String switchingTime = split[2];
@@ -445,11 +515,112 @@ public class MainUI extends JFrame {
 					inter.averageSwitchingTime.setText(switchingTime);
 				} else {
 					WirelessInterface inter = new WirelessInterface();
-					wifiCards.put(interfaceName,inter);
-					tabbedPane.add(interfaceName, new WirelessInterfacePanel(inter));
+					wifiCards.put(interfaceName, inter);
+					tabbedPane.add(interfaceName, new WirelessInterfacePanel(
+							inter));
 					inter.averageSwitchingTime.setText(switchingTime);
 				}
 			}
+		}
+	}
+
+	class Server extends Thread {
+		ServerSocket serverSocket;
+		BufferedReader in;
+		PrintWriter out;
+		public String nodeName, modulePath;
+
+		public Server() {
+		}
+
+		public void run() {
+			while (true) {
+				ServerSocket serverSocket = null;
+				try {
+					serverSocket = new ServerSocket(7);
+					Socket socket = null;
+					System.out.println("Waiting for connection....");
+					socket = serverSocket.accept();
+
+					System.out.println("Connection successful");
+					System.out.println("Waiting for input");
+
+					out = new PrintWriter(socket.getOutputStream(), true);
+					in = new BufferedReader(new InputStreamReader(socket
+							.getInputStream()));
+					socket.getInputStream();
+					socket.getInetAddress().getHostAddress();
+					String inputLine = in.readLine();
+					handleClient(inputLine);
+					in.close();
+					socket.close();
+					serverSocket.close();
+				} catch (Exception e) {
+
+				}
+			}
+		}
+
+		private void handleClient(String command) throws Exception {
+			command = command.toLowerCase();
+			System.out.println(command);
+			if (command.equals("get information")) {
+				getCardsInformation();
+			} else if (command.equals("get statistics")) {
+				getStatsFile();
+			} else if (command.equals("post configuration")) {
+				postFile("Configuration.txt");
+			} else if (command.equals("post module")) {
+				postFile(modulePath + "ModuleFile.txt");
+			} else if (command.equals("start")) {
+				exec.start();
+			}
+		}
+
+		private void getCardsInformation() throws Exception {
+			out.println(nodeName);
+			Enumeration<NetworkInterface> interfaces = NetworkInterface
+					.getNetworkInterfaces();
+			ArrayList<String> wlsMac = new ArrayList<String>();
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface n = interfaces.nextElement();
+				System.out.println(n.getName());
+				byte[] mac = n.getHardwareAddress();
+				if (mac != null) {
+					StringBuffer macAddress = new StringBuffer();
+					for (int i = 0; i < mac.length; i++) {
+						macAddress.append(String.format("%02X%s", mac[i],
+								(i < mac.length - 1) ? ":" : ""));
+					}
+					System.out.println(macAddress.toString());
+					if (n.getName().equals("eth0"))
+						out.println(macAddress.toString());
+					else
+						wlsMac.add(macAddress.toString());
+				}
+			}
+			out.println(wlsMac.size());
+			for (String s : wlsMac)
+				out.println(s);
+			out.close();
+		}
+
+		private void getStatsFile() throws Exception {
+			BufferedReader r = new BufferedReader(new FileReader("stats_"+nodeName+".txt"));
+			String str;
+			while ((str = r.readLine()) != null) {
+				out.println(str);
+			}
+			r.close();
+		}
+
+		private void postFile(String fileName) throws Exception {
+			PrintWriter fileWriter = new PrintWriter(fileName);
+			String str = "";
+			while ((str = in.readLine()) != null) {
+				fileWriter.println(str);
+			}
+			fileWriter.close();
 		}
 	}
 }
