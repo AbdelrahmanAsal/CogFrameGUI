@@ -1,46 +1,24 @@
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 
+import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
-import javax.swing.event.TableModelEvent;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
 
 public class MainUI extends JFrame {
 	TerminalOutputTable t;
@@ -57,10 +35,14 @@ public class MainUI extends JFrame {
 	ProgramExecutor exec;
 	PrimaryUserTable puTableModel;
 	Server server;
+	UITerminalHandler terminalHandler;
 
 	public MainUI(String modulePath) {
+		GroupLayout layout = new GroupLayout(getContentPane());
+		getContentPane().setLayout(layout);
+		layout.setAutoCreateGaps(true);
+		layout.setAutoCreateContainerGaps(true);
 		wifiCards = new HashMap<String, WirelessInterface>();
-		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setDefaultLookAndFeelDecorated(true);
 		try {
 			for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
@@ -74,21 +56,17 @@ public class MainUI extends JFrame {
 		} catch (Exception e) {
 
 		}
-		getContentPane().setLayout(null);
 
 		JLabel filterLabel = new JLabel("Filter:");
-		filterLabel.setBounds(20, 10, 50, 30);
 		filterLabel.setFont(defaultFont);
-		getContentPane().add(filterLabel);
 
 		final JTextField searchField = new JTextField();
-		searchField.setBounds((int) (filterLabel.getX()
-				+ filterLabel.getWidth() + 10), 10, 250, 30);
 		searchField.addKeyListener(new KeyListener() {
 
 			@Override
 			public void keyPressed(KeyEvent k) {
 				query = searchField.getText();
+				terminalHandler.query = query;
 				t.current.clear();
 				for (TerminalTableRowEntry r : t.all)
 					if (r.line.toLowerCase().contains(query.toLowerCase()))
@@ -109,7 +87,6 @@ public class MainUI extends JFrame {
 			}
 
 		});
-		getContentPane().add(searchField);
 
 		JButton applyButton = new JButton("Apply");
 		applyButton.addMouseListener(new MouseListener() {
@@ -117,6 +94,7 @@ public class MainUI extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				query = searchField.getText();
+				terminalHandler.query = query;
 				t.current.clear();
 				for (TerminalTableRowEntry r : t.all)
 					if (r.line.toLowerCase().contains(query.toLowerCase()))
@@ -169,9 +147,6 @@ public class MainUI extends JFrame {
 			}
 
 		});
-		applyButton.setBounds((int) (searchField.getX()
-				+ searchField.getWidth() + 10), 10, 80, 30);
-		getContentPane().add(applyButton);
 
 		JButton clearButton = new JButton("Clear");
 		clearButton.addMouseListener(new MouseListener() {
@@ -179,6 +154,7 @@ public class MainUI extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				query = "";
+				terminalHandler.query = query;
 				searchField.setText("");
 				t.current.clear();
 				t.current.addAll(t.all);
@@ -210,9 +186,6 @@ public class MainUI extends JFrame {
 			}
 
 		});
-		clearButton.setBounds((int) (applyButton.getX()
-				+ applyButton.getWidth() + 10), 10, 80, 30);
-		getContentPane().add(clearButton);
 
 		JButton stopButton = new JButton("Stop");
 		stopButton.addMouseListener(new MouseListener() {
@@ -242,15 +215,8 @@ public class MainUI extends JFrame {
 				// TODO Auto-generated method stub
 			}
 		});
-		stopButton.setBounds(
-				(int) (clearButton.getX() + clearButton.getWidth() + 10), 10,
-				80, 30);
-		getContentPane().add(stopButton);
 
 		final JTextField nodeNameField = new JTextField();
-		nodeNameField.setBounds((int) (stopButton.getX()
-				+ stopButton.getWidth() + 10), 10, 200, 30);
-		getContentPane().add(nodeNameField);
 
 		JButton setNodeNameButton = new JButton("Set node name");
 		setNodeNameButton.addMouseListener(new MouseListener() {
@@ -277,9 +243,6 @@ public class MainUI extends JFrame {
 			public void mouseReleased(MouseEvent e) {
 			}
 		});
-		setNodeNameButton.setBounds((int) (nodeNameField.getX()
-				+ nodeNameField.getWidth() + 10), 10, 150, 30);
-		getContentPane().add(setNodeNameButton);
 
 		t = new TerminalOutputTable();
 		table = new JTable();
@@ -297,7 +260,6 @@ public class MainUI extends JFrame {
 		header.setReorderingAllowed(true);
 		ps = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-		ps.setBounds(10, 50, 800, 800);
 
 		// JScrollBar sb = ps.getVerticalScrollBar();
 		// boolean onBottom = (sb.getValue() == sb.getMaximum());
@@ -315,74 +277,99 @@ public class MainUI extends JFrame {
 					}
 				});
 
-		getContentPane().add(ps);
-
 		tabbedPane = new JTabbedPane();
-		tabbedPane.setBounds((int) (ps.getX() + ps.getWidth() + 10), 10, 680,
-				400);
-		add(tabbedPane);
 
-		String emptyLabelVal = "--";
+		String emptyLabelVal = "0";
 		JLabel packetsReceived = new JLabel("No. of received packets:");
-		packetsReceived.setBounds((int) (ps.getX() + ps.getWidth() + 10),
-				(int) (tabbedPane.getY() + tabbedPane.getHeight() + 10),
-				defaultWidth, defaultHeight);
 		packetsReceived.setFont(defaultFont);
-		getContentPane().add(packetsReceived);
 
 		packetsReceivedVal = new JLabel(emptyLabelVal);
-		packetsReceivedVal.setBounds((int) (packetsReceived.getX()
-				+ packetsReceived.getWidth() + 10), (int) (tabbedPane.getY()
-				+ tabbedPane.getHeight() + 10), defaultWidth, defaultHeight);
 		packetsReceivedVal.setFont(defaultFont);
-		getContentPane().add(packetsReceivedVal);
 
 		JLabel packetsSent = new JLabel("No. of Sent packets:");
-		packetsSent
-				.setBounds((int) (ps.getX() + ps.getWidth() + 10),
-						(int) (packetsReceived.getY()
-								+ packetsReceived.getHeight() + 10),
-						defaultWidth, defaultHeight);
 		packetsSent.setFont(defaultFont);
-		getContentPane().add(packetsSent);
 
 		packetsSentVal = new JLabel(emptyLabelVal);
-		packetsSentVal.setBounds((int) (packetsSent.getX()
-				+ packetsSent.getWidth() + 10), packetsSent.getY(),
-				defaultWidth, defaultHeight);
 		packetsSentVal.setFont(defaultFont);
-		packetsSentVal.setText("0");
-		getContentPane().add(packetsSentVal);
 
 		JLabel primaryUserState = new JLabel("Primary User State");
-		primaryUserState.setBounds((int) (ps.getX() + ps.getWidth() + 10),
-				(int) (packetsSent.getY() + packetsSent.getHeight() + 10),
-				defaultWidth, defaultHeight);
 		primaryUserState.setFont(defaultFont);
-		getContentPane().add(primaryUserState);
+		primaryUserStateVal = new JLabel("Test");
 
 		puTableModel = new PrimaryUserTable();
 		putable = new JTable();
 		putable.setModel(puTableModel);
-		putable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+//		putable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		for (int i = 0; i < 2; i++) {
 			TableColumn tcol = putable.getColumnModel().getColumn(i);
-			tcol.setPreferredWidth(150);
 			tcol.setCellRenderer(new PrimaryUserTableCellRenderer());
 		}
 
 		JScrollPane puScrollPane = new JScrollPane(putable,
 				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-		puScrollPane.setBounds((int) (ps.getX() + ps.getWidth() + 10),
-				(int) (primaryUserState.getY() + primaryUserState.getHeight()),
-				300, 200);
-		getContentPane().add(puScrollPane);
-		UITerminalHandler terminalHandler = new UITerminalHandler(wifiCards,puTableModel, tabbedPane,table, putable, t, packetsSentVal, packetsReceived);
+		terminalHandler = new UITerminalHandler(wifiCards,puTableModel, tabbedPane,table, putable, t, packetsSentVal, packetsReceived);
 		exec = new ProgramExecutor("Configuration.txt", terminalHandler);
 		server = new Server();
 		server.modulePath = modulePath;
 		server.start();
-
+		layout.setHorizontalGroup(
+				   layout.createSequentialGroup()
+				      .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				           .addGroup(layout.createSequentialGroup()
+				        		   .addComponent(filterLabel)
+				        		   .addComponent(searchField)
+				        		   .addComponent(applyButton)
+				        		   .addComponent(clearButton)
+				        		   .addComponent(stopButton)
+				        		   .addComponent(nodeNameField)
+				        		   .addComponent(setNodeNameButton)
+				        		   )
+				            .addComponent(ps))
+				    .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				    		.addComponent(tabbedPane)
+				    		 .addGroup(layout.createSequentialGroup()
+					        		   .addComponent(packetsReceived)
+					        		   .addComponent(packetsReceivedVal))
+			        	     .addGroup(layout.createSequentialGroup()
+						       		   .addComponent(packetsSent)
+						       		   .addComponent(packetsSentVal))
+						       .addGroup(layout.createSequentialGroup()
+						       		   .addComponent(primaryUserState)
+						       		   .addComponent(primaryUserStateVal))
+				            .addComponent(puScrollPane)
+				    		)
+				);
+				layout.setVerticalGroup(
+				   layout.createSequentialGroup()
+				      .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+				    		  .addComponent(filterLabel)
+			        		   .addComponent(searchField)
+			        		   .addComponent(applyButton)
+			        		   .addComponent(clearButton)
+			        		   .addComponent(stopButton)
+			        		   .addComponent(nodeNameField)
+			        		   .addComponent(setNodeNameButton)
+			        		   )
+				      .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+				    		  .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				    				  .addComponent(ps)
+				    		  .addGroup(layout.createSequentialGroup()
+				    				  .addComponent(tabbedPane)
+				    				   .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				    						   .addComponent(packetsReceived)
+				    						   .addComponent(packetsReceivedVal))
+				    				 .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				    						   .addComponent(packetsSent)
+				    						   .addComponent(packetsSentVal))
+				    				   .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+				    						   .addComponent(primaryUserState)
+				    						   .addComponent(primaryUserStateVal))
+				    				   .addComponent(puScrollPane)
+				    				  ))
+				      	)
+				);
+				layout.setAutoCreateGaps(true) ;
+				layout.setAutoCreateContainerGaps(true);
 	}
 }

@@ -14,6 +14,7 @@ public class UITerminalHandler {
 	JTable table, putable;
 	TerminalOutputTable t;
 	JLabel packetsSentVal, packetsReceivedVal;
+	public String query;
 	public UITerminalHandler(HashMap<String, WirelessInterface> wifiCards, PrimaryUserTable puTableModel, JTabbedPane tabbedPane, JTable table, JTable putable, TerminalOutputTable t,JLabel packetsSentVal, JLabel packetsReceivedVal) {
 		this.wifiCards = wifiCards;
 		this.puTableModel = puTableModel;
@@ -23,15 +24,15 @@ public class UITerminalHandler {
 		this.t = t;
 		this.packetsSentVal = packetsSentVal;
 		this.packetsReceivedVal = packetsReceivedVal;
+		query = "";
 	}
 	public void parseCommand(int id, String str) {
 		Date date = new java.util.Date();
 		TerminalTableRowEntry r = new TerminalTableRowEntry(id,
 				new Timestamp(date.getTime()), str);
 		t.all.add(r);
-		// Need to handle the search query , adding real time lines
-//		if (line.toLowerCase().contains(query.toLowerCase()))
-//			t.current.add(r);
+		if (str.toLowerCase().contains(query.toLowerCase()))
+			t.current.add(r);
 		table.getTableHeader().repaint();
 		table.tableChanged(new TableModelEvent(t));
 		table.repaint();
