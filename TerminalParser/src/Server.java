@@ -67,6 +67,7 @@ public class Server extends Thread {
 		Enumeration<NetworkInterface> interfaces = NetworkInterface
 				.getNetworkInterfaces();
 		ArrayList<String> wlsMac = new ArrayList<String>();
+		ArrayList<String> wlsName = new ArrayList<String>();
 		while (interfaces.hasMoreElements()) {
 			NetworkInterface n = interfaces.nextElement();
 			System.out.println(n.getName());
@@ -80,13 +81,17 @@ public class Server extends Thread {
 				System.out.println(macAddress.toString());
 				if (n.getName().equals("eth0"))
 					out.println(macAddress.toString());
-				else
+				else {
+					wlsName.add(n.getName());
 					wlsMac.add(macAddress.toString());
+				}
 			}
 		}
 		out.println(wlsMac.size());
-		for (String s : wlsMac)
-			out.println(s);
+		for (int i = 0; i < wlsMac.size(); i++) {
+			out.println(wlsName.get(i));
+			out.println(wlsMac.get(i));
+		}
 		out.close();
 	}
 
