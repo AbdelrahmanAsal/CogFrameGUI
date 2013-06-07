@@ -59,6 +59,8 @@ public class Server extends Thread {
 			postFile(modulePath + "ModuleFile.txt");
 		} else if (command.equals("start")) {
 			exec.start();
+		} else if(command.equals("stop")) {
+			exec.finished = true;
 		}
 	}
 

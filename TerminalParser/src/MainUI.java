@@ -308,7 +308,7 @@ public class MainUI extends JFrame {
 		JScrollPane puScrollPane = new JScrollPane(putable,
 				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-		terminalHandler = new UITerminalHandler(wifiCards,puTableModel, tabbedPane,table, putable, t, packetsSentVal, packetsReceived);
+		terminalHandler = new UITerminalHandler(wifiCards,puTableModel, tabbedPane,table, putable, t, packetsSentVal, packetsReceivedVal);
 		exec = new ProgramExecutor("Configuration.txt", terminalHandler);
 		server = new Server();
 		server.modulePath = modulePath;
