@@ -4,7 +4,6 @@ import javax.swing.GroupLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import sun.security.x509.AVA;
 
 
 public class WirelessInterfacePanel extends JPanel {

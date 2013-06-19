@@ -312,6 +312,7 @@ public class MainUI extends JFrame {
 		exec = new ProgramExecutor("Configuration.txt", terminalHandler);
 		server = new Server();
 		server.modulePath = modulePath;
+		server.exec = exec;
 		server.start();
 		layout.setHorizontalGroup(
 				   layout.createSequentialGroup()

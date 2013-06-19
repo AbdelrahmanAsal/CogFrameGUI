@@ -1,5 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.NetworkInterface;
@@ -7,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 
 public class Server extends Thread {
 	ServerSocket serverSocket;
@@ -14,8 +17,10 @@ public class Server extends Thread {
 	PrintWriter out;
 	public String nodeName, modulePath;
 	ProgramExecutor exec;
-
+	HashMap<Integer, Integer> primaryUsers;
+	
 	public Server() {
+		primaryUsers = new HashMap<Integer, Integer>();
 	}
 
 	public void run() {
@@ -61,6 +66,42 @@ public class Server extends Thread {
 			exec.start();
 		} else if(command.equals("stop")) {
 			exec.finished = true;
+		} else if(command.startsWith("primaryuser")) {
+			String[] split = command.split("[ ]+");
+			String channel = split[1];
+			setPrimaryUser(channel, split[2]);
+		}
+	}
+
+	private void setPrimaryUser(String channel, String state) {
+		int ch = new Integer(channel);
+		ArrayList<Integer> unsensed = new ArrayList<Integer>();
+		if(state.equals("1")) {
+			// On
+			int currUsers = primaryUsers.containsKey(ch) ? primaryUsers.get(ch) : 0;
+			primaryUsers.put(ch, currUsers + 1);
+		} else {
+			// Off
+			int currUsers = primaryUsers.remove(ch);
+			currUsers --;
+			if(currUsers > 0) {
+				primaryUsers.put(ch, currUsers);
+			} else {
+				unsensed.add(ch);
+			}
+		}
+		try {
+			PrintWriter out = new PrintWriter(new FileWriter(modulePath + "PU.txt"));
+			out.println(primaryUsers.size());
+			for(Integer c: primaryUsers.keySet()) {
+				out.println(c);
+			}
+			out.println(unsensed.size());
+			for(int x:unsensed)
+				out.println(x);
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
